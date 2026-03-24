@@ -1,0 +1,71 @@
+{
+  "$schema": "https://developer.microsoft.com/en-us/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.1",
+  "id": "057feac2-4ae4-4ad3-aaba-bd8d83217c15",
+  "developer": {
+    "name": "SysManager Informática LTDA",
+    "websiteUrl": "https://www.sysmanager.com.br",
+    "privacyUrl": "https://www.sysmanager.com.br/privacidade",
+    "termsOfUseUrl": "https://www.sysmanager.com.br/termos"
+  },
+  "name": {
+    "short": "Meeting Manager",
+    "full": "SysManager Meeting Manager"
+  },
+  "description": {
+    "short": "Gerencie pautas e tempo de reunião em tempo real.",
+    "full": "O Meeting Manager permite estruturar pautas, controlar o tempo de cada tópico e monitorar o tempo de fala de cada participante durante reuniões no Microsoft Teams. Inclui cronômetro global, alertas de estouro e resumo exportável ao final."
+  },
+  "icons": {
+    "color": "icon-color.png",
+    "outline": "icon-outline.png"
+  },
+  "accentColor": "#0066b3",
+  "staticTabs": [
+    {
+      "entityId": "meetingManager",
+      "name": "Meeting Manager",
+      "contentUrl": "https://kyew22.github.io/meeting-manager/index.html",
+      "websiteUrl": "https://kyew22.github.io/meeting-manager/index.html",
+      "scopes": ["personal"]
+    }
+  ],
+  "configurableTabs": [
+    {
+      "configurationUrl": "https://kyew22.github.io/meeting-manager/config.html",
+      "canUpdateConfiguration": true,
+      "scopes": ["team", "groupChat"],
+      "context": [
+        "channelTab",
+        "privateChatTab",
+        "meetingChatTab",
+        "meetingSidePanel",
+        "meetingStage"
+      ]
+    }
+  ],
+  "bots": [],
+  "connectors": [],
+  "composeExtensions": [],
+  "permissions": ["identity", "messageTeamMembers"],
+  "validDomains": ["kyew22.github.io"],
+  "authorization": {
+    "permissions": {
+      "resourceSpecific": [
+        {
+          "name": "MeetingStage.Write.Chat",
+          "type": "Delegated"
+        },
+        {
+          "name": "OnlineMeetingParticipant.Read.Chat",
+          "type": "Delegated"
+        }
+      ]
+    }
+  },
+  "webApplicationInfo": {
+    "id": "057feac2-4ae4-4ad3-aaba-bd8d83217c15",
+    "resource": "https://kyew22.github.io/meeting-manager"
+  }
+}
