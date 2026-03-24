@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meeting Manager — SysManager</title>
+  <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
+  <style>
+    :root {
+      --primary: #0066b3;
+      --primary-light: #e6f1fb;
+      --primary-dark: #004d87;
+      --secondary: #d83d96;
+      --success: #1d9e75;
+      --success-light: #eaf3de;
+      --danger: #e24b4a;
+      --danger-light: #fcebeb;
+      --warning: #ba7517;
+      --warning-light: #faeeda;
+      --text: #1a1a1a;
+      --text-muted: #666;
+      --text-hint: #999;
+      --border: rgba(0,0,0,0.12);
+      --border-mid: rgba(0,0,0,0.2);
+      --bg: #ffffff;
+      --bg-2: #f5f5f3;
+      --bg-3: #eeede8;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #378add;
+        --primary-light: #0c447c22;
+        --text: #e8e8e8;
+        --text-muted: #aaa;
+        --text-hint: #666;
+        --border: rgba(255,255,255,0.1);
+        --border-mid: rgba(255,255,255,0.2);
+        --bg: #1c1c1c;
+        --bg-2: #252525;
+        --bg-3: #2f2f2f;
+        --success-light: #17341133;
+        --danger-light: #50131333;
+        --warning-light: #41240233;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .app { padding: 16px; max-width: 960px; margin: 0 auto; }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-left .app-title { font-size: 17px; font-weight: 600; color: var(--text); }
+    .header-left .meeting-name { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .total-clock { text-align: right; }
+    .total-clock .label { font-size: 10px; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; }
+    .total-clock .value { font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--text); }
+
+    /* TABS */
+    .tabs { display: flex; gap: 2px; background: var(--bg-2); padding: 3px; border-radius: var(--radius); width: fit-content; margin-bottom: 16px; }
+    .tab-btn {
+      padding: 5px 16px; border-radius: 6px; font-size: 13px;
+      cursor: pointer; border: none; background: transparent;
+      color: var(--text-muted); font-family: inherit; transition: all 0.15s;
+    }
+    .tab-btn.active {
+      background: var(--bg); color: var(--text);
+      font-weight: 600; border: 1px solid var(--border);
+    }
+
+    /* SECTIONS */
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* FORM */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .field input, .field select {
+      padding: 8px 10px; border: 1px solid var(--border-mid);
+      border-radius: var(--radius); font-size: 13px;
+      background: var(--bg); color: var(--text); font-family: inherit;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--primary); }
+
+    .section-hdr {
+      font-size: 11px; font-weight: 700; color: var(--text-hint);
+      text-transform: uppercase; letter-spacing: 0.07em;
+      margin: 16px 0 8px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .add-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; flex-wrap: wrap; }
+    .add-row .field { flex: 1; min-width: 120px; margin: 0; }
+    .add-row .field.narrow { max-width: 90px; }
+
+    /* BUTTONS */
+    .btn {
+      padding: 7px 14px; border-radius: var(--radius); font-size: 13px;
+      font-weight: 500; cursor: pointer; border: 1px solid var(--border-mid);
+      background: var(--bg); color: var(--text); font-family: inherit;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-2); }
+    .btn:active { transform: scale(0.97); }
+    .btn.primary { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn.danger { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+    .btn.success { background: var(--success-light); color: var(--success); border-color: var(--success); }
+    .btn.sm { padding: 4px 10px; font-size: 12px; }
+    .btn.ghost { border: none; background: transparent; color: var(--text-muted); }
+    .btn.ghost:hover { color: var(--danger); }
+
+    /* LISTS */
+    .item-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+
+    .agenda-item {
+      display: grid; grid-template-columns: auto 1fr auto auto;
+      gap: 10px; align-items: center;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 9px 12px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .agenda-item.running { border-color: var(--primary); background: var(--primary-light); }
+    .agenda-item.done { opacity: 0.55; }
+    .agenda-item.skipped { opacity: 0.4; }
+    .agenda-num { font-size: 12px; font-weight: 700; color: var(--text-hint); min-width: 20px; }
+    .agenda-body { min-width: 0; }
+    .agenda-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .agenda-sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .agenda-prog { height: 2px; background: var(--bg-3); border-radius: 2px; margin-top: 5px; }
+    .agenda-prog-fill { height: 100%; border-radius: 2px; background: var(--primary); transition: width 0.5s; }
+    .agenda-prog-fill.over { background: var(--danger); }
+    .agenda-time { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--text-muted); text-align: right; min-width: 46px; }
+    .agenda-time.running { color: var(--primary); font-weight: 600; }
+    .agenda-time.over { color: var(--danger); }
+    .agenda-status { min-width: 18px; text-align: center; }
+
+    .part-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
+    .part-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 10px 12px;
+      cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .part-card:hover { border-color: var(--border-mid); background: var(--bg-2); }
+    .part-card.speaking { border-color: var(--primary); background: var(--primary-light); }
+    .part-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--primary-light); display: flex;
+      align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--primary);
+      margin-bottom: 6px;
+    }
+    .part-card.speaking .part-avatar { background: var(--primary); color: white; }
+    .part-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .part-role { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .part-time { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--text-muted); margin-top: 4px; }
+    .part-bar { height: 2px; background: var(--bg-3); border-radius: 2px; margin-top: 5px; }
+    .part-bar-fill { height: 100%; border-radius: 2px; background: var(--success); transition: width 0.5s; }
+
+    /* RUN SECTION */
+    .current-box {
+      background: var(--primary-light); border: 1px solid var(--primary);
+      border-radius: var(--radius-lg); padding: 12px 16px; margin-bottom: 12px;
+      display: none;
+    }
+    .current-label { font-size: 10px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
+    .current-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .current-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .current-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .big-timer { font-size: 38px; font-weight: 200; font-variant-numeric: tabular-nums; color: var(--primary); white-space: nowrap; }
+    .big-timer.over { color: var(--danger); }
+
+    .status-bar {
+      display: flex; gap: 16px; align-items: center;
+      background: var(--bg-2); border-radius: var(--radius);
+      padding: 7px 12px; margin-bottom: 12px; font-size: 12px;
+      color: var(--text-muted); flex-wrap: wrap;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .dot.green { background: var(--success); }
+    .dot.amber { background: var(--warning); }
+    .dot.gray { background: var(--text-hint); }
+
+    .ctrl-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+    /* SUMMARY */
+    .sum-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 16px; }
+    .stat-card { background: var(--bg-2); border-radius: var(--radius); padding: 10px 12px; }
+    .stat-label { font-size: 10px; font-weight: 700; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-val { font-size: 22px; font-weight: 300; color: var(--text); margin-top: 2px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { font-size: 10px; font-weight: 700; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.05em; padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    tbody td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge.ok { background: var(--success-light); color: var(--success); }
+    .badge.over { background: var(--danger-light); color: var(--danger); }
+    .badge.skip { background: var(--bg-2); color: var(--text-hint); }
+
+    .empty { text-align: center; padding: 24px; color: var(--text-hint); font-size: 13px; }
+
+    @media (max-width: 480px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .add-row { flex-direction: column; }
+      .add-row .field { max-width: 100%; }
+      .big-timer { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="app-title">Meeting Manager</div>
+      <div class="meeting-name" id="hdr-name">Nova reunião</div>
+    </div>
+    <div class="total-clock">
+      <div class="label">Tempo total</div>
+      <div class="value" id="total-clock">00:00</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('setup')">Configuração</button>
+    <button class="tab-btn" onclick="switchTab('run')">Reunião</button>
+    <button class="tab-btn" onclick="switchTab('summary')">Resumo</button>
+  </div>
+
+  <!-- ════════════ SETUP ════════════ -->
+  <div class="section active" id="tab-setup">
+    <div class="grid-2">
+      <div class="field">
+        <label>Nome da reunião</label>
+        <input id="s-name" type="text" placeholder="Ex: Alinhamento Semanal" value="Alinhamento Semanal">
+      </div>
+      <div class="field">
+        <label>Data / Hora</label>
+        <input id="s-datetime" type="datetime-local">
+      </div>
+    </div>
+
+    <div class="section-hdr">
+      Pautas
+      <button class="btn sm ghost" onclick="clearAgenda()">Limpar</button>
+    </div>
+    <div class="add-row">
+      <div class="field"><input id="n-atitle" type="text" placeholder="Título da pauta" onkeydown="if(event.key==='Enter')addAgenda()"></div>
+      <div class="field narrow"><input id="n-amin" type="number" placeholder="Min" min="1" max="180" value="10" style="max-width:80px"></div>
+      <div class="field" style="max-width:160px">
+        <select id="n-aowner"><option value="">Responsável...</option></select>
+      </div>
+      <button class="btn primary" onclick="addAgenda()">+ Pauta</button>
+    </div>
+    <div class="item-list" id="setup-agenda"></div>
+
+    <div class="section-hdr">
+      Participantes
+      <button class="btn sm ghost" onclick="clearParts()">Limpar</button>
+    </div>
+    <div class="add-row">
+      <div class="field"><input id="n-pname" type="text" placeholder="Nome" onkeydown="if(event.key==='Enter')addPart()"></div>
+      <div class="field" style="max-width:160px"><input id="n-prole" type="text" placeholder="Cargo / Área"></div>
+      <button class="btn primary" onclick="addPart()">+ Participante</button>
+    </div>
+    <div class="part-grid" id="setup-parts"></div>
+
+    <div style="margin-top:16px">
+      <button class="btn primary" style="padding:9px 24px; font-size:14px" onclick="startMeeting()">Iniciar reunião →</button>
+    </div>
+  </div>
+
+  <!-- ════════════ RUN ════════════ -->
+  <div class="section" id="tab-run">
+    <div class="current-box" id="cur-box">
+      <div class="current-label">Pauta em andamento</div>
+      <div class="current-row">
+        <div>
+          <div class="current-title" id="cur-title">—</div>
+          <div class="current-meta" id="cur-meta"></div>
+        </div>
+        <div class="big-timer" id="pauta-timer">00:00</div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span><span class="dot gray" id="sdot"></span><span id="stxt">Aguardando</span></span>
+      <span id="sinfo"></span>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="btn primary" id="btn-pp" onclick="togglePlay()">▶ Iniciar</button>
+      <button class="btn" onclick="nextAgenda()">Próxima pauta →</button>
+      <button class="btn sm danger" onclick="skipAgenda()">Pular pauta</button>
+      <button class="btn sm success" onclick="endMeeting()">Encerrar</button>
+    </div>
+
+    <div class="section-hdr">Pautas</div>
+    <div class="item-list" id="run-agenda"></div>
+
+    <div class="section-hdr" style="margin-top:14px">
+      Participantes
+      <span style="font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-hint);">Clique para cronometrar fala</span>
+    </div>
+    <div class="part-grid" id="run-parts"></div>
+  </div>
+
+  <!-- ════════════ SUMMARY ════════════ -->
+  <div class="section" id="tab-summary">
+    <div class="sum-meta" id="sum-meta"></div>
+    <div class="stats-row" id="sum-stats"></div>
+
+    <div class="section-hdr">Pautas</div>
+    <table>
+      <thead><tr><th>Pauta</th><th>Responsável</th><th>Previsto</th><th>Realizado</th><th>Status</th></tr></thead>
+      <tbody id="sum-agenda"><tr><td colspan="5" class="empty">Nenhuma reunião finalizada.</td></tr></tbody>
+    </table>
+
+    <div class="section-hdr" style="margin-top:16px">Participantes</div>
+    <table>
+      <thead><tr><th>Nome</th><th>Área</th><th>Tempo de fala</th><th>% do total</th></tr></thead>
+      <tbody id="sum-parts"><tr><td colspan="4" class="empty">—</td></tr></tbody>
+    </table>
+
+    <div style="margin-top:16px; display:flex; gap:8px; flex-wrap:wrap">
+      <button class="btn primary" onclick="exportTxt()">Exportar .txt</button>
+      <button class="btn" onclick="newMeeting()">Nova reunião</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Teams SDK init ──────────────────────────────────────────────
+  microsoftTeams.app.initialize().then(() => {
+    microsoftTeams.app.getContext().then(ctx => {
+      if(ctx?.user?.displayName) {
+        const name = ctx.user.displayName;
+        if(!parts.find(p=>p.name===name)) {
+          parts.push({id:pid++,name,role:'',talkTime:0,speaking:false,_base:0});
+          renderSetupParts(); updateOwnerSel();
+        }
+      }
+    }).catch(()=>{});
+  }).catch(()=>{});
+
+  // ── State ───────────────────────────────────────────────────────
+  let agenda=[], parts=[], aid=0, pid=0;
+  let running=false, paused=false, totalSec=0, totalTmr=null;
+  let curIdx=0, aSec=0, aTmr=null;
+  let spkIdx=null, spkTmr=null, spkStart=null;
+
+  // ── Utils ───────────────────────────────────────────────────────
+  const fmt = s => String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  const ini = n => n.split(' ').slice(0,2).map(x=>x[0]).join('').toUpperCase();
+  const $ = id => document.getElementById(id);
+
+  // ── Tabs ────────────────────────────────────────────────────────
+  function switchTab(t){
+    document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['setup','run','summary'][i]===t));
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    $('tab-'+t).classList.add('active');
+    if(t==='summary') buildSummary();
+  }
+
+  // ── Participants ────────────────────────────────────────────────
+  function addPart(){
+    const name=$('n-pname').value.trim(), role=$('n-prole').value.trim();
+    if(!name) return;
+    parts.push({id:pid++,name,role,talkTime:0,speaking:false,_base:0});
+    $('n-pname').value=''; $('n-prole').value='';
+    renderSetupParts(); updateOwnerSel();
+  }
+  function removePart(id){ parts=parts.filter(p=>p.id!==id); renderSetupParts(); updateOwnerSel(); }
+  function clearParts(){ parts=[]; renderSetupParts(); updateOwnerSel(); }
+
+  function renderSetupParts(){
+    const el=$('setup-parts');
+    if(!parts.length){el.innerHTML='<div class="empty">Nenhum participante.</div>';return;}
+    el.innerHTML=parts.map(p=>`
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:10px 12px;display:flex;align-items:center;gap:10px;">
+        <div class="part-avatar">${ini(p.name)}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.name}</div>
+          <div style="font-size:11px;color:var(--text-muted)">${p.role||'—'}</div>
+        </div>
+        <button class="btn sm ghost" onclick="removePart(${p.id})">✕</button>
+      </div>`).join('');
+  }
+
+  function updateOwnerSel(){
+    const s=$('n-aowner'), v=s.value;
+    s.innerHTML='<option value="">Responsável...</option>'+parts.map(p=>`<option value="${p.name}">${p.name}</option>`).join('');
+    s.value=v;
+  }
+
+  // ── Agenda ──────────────────────────────────────────────────────
+  function addAgenda(){
+    const title=$('n-atitle').value.trim(), min=parseInt($('n-amin').value)||10, owner=$('n-aowner').value;
+    if(!title) return;
+    agenda.push({id:aid++,title,minutes:min,owner,elapsed:0,status:'pending'});
+    $('n-atitle').value='';
+    renderSetupAgenda();
+  }
+  function removeAgenda(id){ agenda=agenda.filter(a=>a.id!==id); renderSetupAgenda(); }
+  function clearAgenda(){ agenda=[]; renderSetupAgenda(); }
+
+  function renderSetupAgenda(){
+    const el=$('setup-agenda');
+    if(!agenda.length){el.innerHTML='<div class="empty">Nenhuma pauta.</div>';return;}
+    el.innerHTML=agenda.map((a,i)=>`
+      <div class="agenda-item">
+        <div class="agenda-num">${i+1}</div>
+        <div class="agenda-body">
+          <div class="agenda-title">${a.title}</div>
+          <div class="agenda-sub">${a.owner||'Sem responsável'} · ${a.minutes} min</div>
+        </div>
+        <div></div>
+        <button class="btn sm ghost" onclick="removeAgenda(${a.id})">✕</button>
+      </div>`).join('');
+  }
+
+  // ── Meeting control ──────────────────────────────────────────────
+  function startMeeting(){
+    $('hdr-name').textContent=$('s-name').value.trim()||'Nova reunião';
+    agenda.forEach(a=>{a.elapsed=0;a.status='pending';});
+    parts.forEach(p=>{p.talkTime=0;p.speaking=false;p._base=0;});
+    curIdx=0; aSec=0; totalSec=0; running=false; paused=false; spkIdx=null;
+    switchTab('run');
+    renderRunAgenda(); renderRunParts();
+    setStatus('idle');
+  }
+
+  function togglePlay(){
+    if(!running){
+      running=true; paused=false;
+      totalTmr=setInterval(()=>{totalSec++;$('total-clock').textContent=fmt(totalSec);},1000);
+      startATmr();
+      if(curIdx<agenda.length) agenda[curIdx].status='running';
+      showCurrent();
+      $('btn-pp').textContent='⏸ Pausar';
+      setStatus('running');
+    } else if(!paused){
+      paused=true;
+      clearInterval(totalTmr); clearInterval(aTmr); stopSpk();
+      $('btn-pp').textContent='▶ Continuar';
+      setStatus('paused');
+    } else {
+      paused=false;
+      totalTmr=setInterval(()=>{totalSec++;$('total-clock').textContent=fmt(totalSec);},1000);
+      startATmr();
+      $('btn-pp').textContent='⏸ Pausar';
+      setStatus('running');
+    }
+  }
+
+  function startATmr(){
+    clearInterval(aTmr);
+    aTmr=setInterval(()=>{
+      if(curIdx>=agenda.length) return;
+      aSec++; agenda[curIdx].elapsed=aSec;
+      const over=aSec>agenda[curIdx].minutes*60;
+      $('pauta-timer').textContent=fmt(aSec);
+      $('pauta-timer').classList.toggle('over',over);
+      renderRunAgenda();
+    },1000);
+  }
+
+  function showCurrent(){
+    if(curIdx>=agenda.length){$('cur-box').style.display='none';return;}
+    const a=agenda[curIdx];
+    $('cur-box').style.display='block';
+    $('cur-title').textContent=`${curIdx+1}. ${a.title}`;
+    $('cur-meta').textContent=`${a.owner||'Sem responsável'} · ${a.minutes} min previstos`;
+    $('pauta-timer').classList.remove('over');
+    $('sinfo').textContent=`Pauta ${curIdx+1} de ${agenda.length}`;
+  }
+
+  function nextAgenda(){
+    if(!running||paused||curIdx>=agenda.length) return;
+    agenda[curIdx].status='done'; clearInterval(aTmr);
+    curIdx++; aSec=0;
+    if(curIdx>=agenda.length){$('cur-box').style.display='none';renderRunAgenda();return;}
+    agenda[curIdx].status='running';
+    showCurrent(); startATmr(); renderRunAgenda();
+  }
+
+  function skipAgenda(){
+    if(!running||curIdx>=agenda.length) return;
+    agenda[curIdx].status='skipped'; clearInterval(aTmr);
+    curIdx++; aSec=0;
+    if(curIdx>=agenda.length){$('cur-box').style.display='none';renderRunAgenda();return;}
+    agenda[curIdx].status='running';
+    showCurrent(); if(!paused) startATmr(); renderRunAgenda();
+  }
+
+  function endMeeting(){
+    clearInterval(totalTmr); clearInterval(aTmr); stopSpk();
+    running=false;
+    agenda.forEach(a=>{if(a.status==='pending') a.status='skipped';});
+    switchTab('summary');
+  }
+
+  // ── Speaker timing ──────────────────────────────────────────────
+  function stopSpk(){
+    if(spkIdx===null) return;
+    const dur=Math.floor((Date.now()-spkStart)/1000);
+    parts[spkIdx].talkTime=(parts[spkIdx]._base||0)+dur;
+    parts[spkIdx].speaking=false;
+    clearInterval(spkTmr); spkIdx=null;
+  }
+
+  function toggleSpk(i){
+    if(!running||paused) return;
+    if(spkIdx===i){stopSpk();renderRunParts();return;}
+    stopSpk();
+    spkIdx=i; spkStart=Date.now();
+    parts[i].speaking=true; parts[i]._base=parts[i].talkTime;
+    spkTmr=setInterval(()=>{
+      parts[i].talkTime=(parts[i]._base||0)+Math.floor((Date.now()-spkStart)/1000);
+      renderRunParts();
+    },1000);
+    renderRunParts();
+  }
+
+  // ── Render run ──────────────────────────────────────────────────
+  function renderRunAgenda(){
+    const el=$('run-agenda');
+    if(!agenda.length){el.innerHTML='<div class="empty">Nenhuma pauta.</div>';return;}
+    const maxTime=Math.max(...parts.map(p=>p.talkTime),1);
+    el.innerHTML=agenda.map((a,i)=>{
+      const isRun=i===curIdx&&running;
+      const pct=Math.min(100,Math.round(a.elapsed/(a.minutes*60)*100));
+      const over=a.elapsed>a.minutes*60;
+      return `<div class="agenda-item ${isRun?'running':''} ${a.status==='done'?'done':''} ${a.status==='skipped'?'skipped':''}">
+        <div class="agenda-num">${i+1}</div>
+        <div class="agenda-body">
+          <div class="agenda-title">${a.title}</div>
+          <div class="agenda-sub">${a.owner||'—'} · ${a.minutes} min</div>
+          ${isRun?`<div class="agenda-prog"><div class="agenda-prog-fill ${over?'over':''}" style="width:${pct}%"></div></div>`:''}
+        </div>
+        <div class="agenda-time ${isRun?'running':''} ${over?'over':''}">${a.elapsed?fmt(a.elapsed):'—'}</div>
+        <div class="agenda-status">
+          ${a.status==='done'?'<span style="color:var(--success)">✓</span>':
+            a.status==='skipped'?'<span style="color:var(--text-hint)">−</span>':
+            isRun?'<span style="color:var(--primary)">●</span>':''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderRunParts(){
+    const el=$('run-parts');
+    if(!parts.length){el.innerHTML='<div class="empty">Nenhum participante.</div>';return;}
+    const mx=Math.max(...parts.map(p=>p.talkTime),1);
+    el.innerHTML=parts.map((p,i)=>`
+      <div class="part-card ${p.speaking?'speaking':''}" onclick="toggleSpk(${i})">
+        <div class="part-avatar">${ini(p.name)}</div>
+        <div class="part-name">${p.name}</div>
+        <div class="part-role">${p.role||'—'}</div>
+        <div class="part-time">${fmt(p.talkTime)}</div>
+        <div class="part-bar"><div class="part-bar-fill" style="width:${Math.round(p.talkTime/mx*100)}%"></div></div>
+      </div>`).join('');
+  }
+
+  function setStatus(s){
+    const dot=$('sdot'), txt=$('stxt');
+    if(s==='running'){dot.className='dot green';txt.textContent='Em andamento';}
+    else if(s==='paused'){dot.className='dot amber';txt.textContent='Pausado';}
+    else{dot.className='dot gray';txt.textContent='Aguardando início';}
+  }
+
+  // ── Summary ─────────────────────────────────────────────────────
+  function buildSummary(){
+    const name=$('s-name').value.trim()||'Reunião';
+    const totalTalk=parts.reduce((a,p)=>a+p.talkTime,0);
+    const pautas=agenda.length, done=agenda.filter(a=>a.status==='done').length;
+    $('sum-meta').textContent=`${name}`;
+    $('sum-stats').innerHTML=`
+      <div class="stat-card"><div class="stat-label">Duração total</div><div class="stat-val">${fmt(totalSec)}</div></div>
+      <div class="stat-card"><div class="stat-label">Pautas concluídas</div><div class="stat-val">${done}/${pautas}</div></div>
+      <div class="stat-card"><div class="stat-label">Participantes</div><div class="stat-val">${parts.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Tempo de fala</div><div class="stat-val">${fmt(totalTalk)}</div></div>`;
+    $('sum-agenda').innerHTML=agenda.length?agenda.map(a=>{
+      const over=a.elapsed>a.minutes*60;
+      const badge=a.status==='skipped'?'<span class="badge skip">Pulada</span>':
+        over?'<span class="badge over">Excedeu</span>':'<span class="badge ok">No prazo</span>';
+      return `<tr><td>${a.title}</td><td>${a.owner||'—'}</td><td>${a.minutes} min</td><td>${a.elapsed?fmt(a.elapsed):'—'}</td><td>${badge}</td></tr>`;
+    }).join(''):'<tr><td colspan="5" class="empty">Nenhuma pauta.</td></tr>';
+    $('sum-parts').innerHTML=parts.length?parts.map(p=>{
+      const pct=totalTalk>0?Math.round(p.talkTime/totalTalk*100):0;
+      return `<tr><td>${p.name}</td><td>${p.role||'—'}</td><td>${fmt(p.talkTime)}</td><td>${pct}%</td></tr>`;
+    }).join(''):'<tr><td colspan="4" class="empty">—</td></tr>';
+  }
+
+  function exportTxt(){
+    const name=$('s-name').value.trim()||'Reunião';
+    let t=`RESUMO — ${name}\nDuração: ${fmt(totalSec)}\n\nPAUTAS:\n`;
+    agenda.forEach((a,i)=>{ t+=`${i+1}. ${a.title} | ${a.owner||'—'} | ${a.minutes}min previstos | ${a.elapsed?fmt(a.elapsed):'—'} | ${a.status}\n`; });
+    t+=`\nPARTICIPANTES:\n`;
+    const tt=parts.reduce((a,p)=>a+p.talkTime,0);
+    parts.forEach(p=>{t+=`${p.name} (${p.role||'—'}) | ${fmt(p.talkTime)} | ${tt>0?Math.round(p.talkTime/tt*100):0}%\n`;});
+    const blob=new Blob([t],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download='resumo-reuniao.txt'; a.click();
+  }
+
+  function newMeeting(){
+    agenda=[]; parts=[]; aid=0; pid=0;
+    totalSec=0; aSec=0; running=false; paused=false; curIdx=0; spkIdx=null;
+    renderSetupAgenda(); renderSetupParts();
+    $('total-clock').textContent='00:00';
+    switchTab('setup');
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  const now=new Date(); now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  $('s-datetime').value=now.toISOString().slice(0,16);
+  agenda=[
+    {id:aid++,title:'Abertura e alinhamento',minutes:5,owner:'',elapsed:0,status:'pending'},
+    {id:aid++,title:'Status dos projetos',minutes:15,owner:'',elapsed:0,status:'pending'},
+    {id:aid++,title:'Pontos de atenção',minutes:10,owner:'',elapsed:0,status:'pending'},
+    {id:aid++,title:'Próximos passos',minutes:10,owner:'',elapsed:0,status:'pending'},
+  ];
+  renderSetupAgenda();
+</script>
+</body>
+</html>
